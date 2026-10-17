@@ -1,0 +1,100 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5fb">
+  <title>Student Management System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <section class="auth-check-screen" id="auth-gate" aria-live="polite">
+    <span class="auth-spinner" aria-hidden="true"></span>
+    <h1>Checking your session</h1>
+    <p id="auth-gate-message">Connecting securely to your student portal…</p>
+    <button class="button button-primary hidden" id="auth-retry" type="button">Try again</button>
+    <a class="text-link hidden" id="auth-login-link" href="login.html">Go to sign in</a>
+  </section>
+  <div class="app-shell hidden" id="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#dashboard" aria-label="CampusFlow home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span><strong>CampusFlow</strong><small>STUDENT PORTAL</small></span>
+      </a>
+      <p class="nav-label">MENU</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#dashboard" class="nav-link active" data-page="dashboard"><span class="nav-icon" aria-hidden="true">▦</span>Dashboard</a>
+        <a href="#students" class="nav-link" data-page="students"><span class="nav-icon" aria-hidden="true">♧</span>Students</a>
+        <a href="#add-student" class="nav-link" data-page="add-student" data-role="staff"><span class="nav-icon" aria-hidden="true">＋</span>Add Student</a>
+      </nav>
+        <a href="#departments" class="nav-link" data-page="departments"><span class="nav-icon" aria-hidden="true">⌂</span>Departments</a>
+        <a href="#attendance" class="nav-link" data-page="attendance"><span class="nav-icon" aria-hidden="true">✓</span>Attendance</a>
+      <div class="sidebar-bottom">
+        <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✦</span><strong>Your campus, organized.</strong><p>Keep student records in one simple place.</p></div>
+        <span class="version-label">PHASE 4 · SECURE SESSIONS</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong id="page-heading">Dashboard</strong></div>
+        <div class="topbar-actions"><span class="today-label" id="today-label"></span><span class="user-badge" id="auth-user"></span><button class="button button-secondary button-small" type="button" id="logout-button">Log out</button><button class="button button-primary button-small" type="button" data-go="add-student" data-role="staff"><span aria-hidden="true">＋</span> Add Student</button></div>
+      </header>
+
+      <div class="page-wrap">
+        <section class="page-view" id="dashboard-view" aria-labelledby="dashboard-title">
+          <div class="page-intro"><div><p class="eyebrow">OVERVIEW</p><h1 id="dashboard-title">Dashboard</h1><p class="page-subtitle">Here’s what’s happening with your students.</p></div><button class="button button-secondary" type="button" id="refresh-data">↻ Refresh data</button></div>
+          <div class="stats-grid" id="stats-grid" aria-live="polite"></div>
+          <section class="panel recent-panel" aria-labelledby="recent-title">
+            <div class="panel-heading"><div><h2 id="recent-title">Recent Students</h2><p>Your latest student records</p></div><a class="text-link" href="#students">View all students <span aria-hidden="true">→</span></a></div>
+            <div class="table-scroll"><table><thead><tr><th>STUDENT</th><th>STUDENT ID</th><th>COURSE</th><th>STATUS</th></tr></thead><tbody id="recent-table-body"></tbody></table></div>
+            <div class="empty-state hidden" id="recent-empty"><span class="empty-icon" aria-hidden="true">♧</span><h3>No students yet</h3><p>Add your first student to see your dashboard come to life.</p><button class="button button-primary" type="button" data-go="add-student">＋ Add your first student</button></div>
+          </section>
+          <p class="storage-hint"><span aria-hidden="true">●</span> Your records are protected by your account.</p>
+        </section>
+
+        <section class="page-view hidden" id="students-view" aria-labelledby="students-title">
+          <div class="page-intro"><div><p class="eyebrow">DIRECTORY</p><h1 id="students-title">Students</h1><p class="page-subtitle">Browse and manage your student records.</p></div><button class="button button-primary" type="button" data-go="add-student" data-role="staff">＋ Add Student</button></div>
+          <section class="panel directory-panel">
+            <div class="directory-toolbar"><label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Search students</span><input id="student-search" type="search" placeholder="Search name, email, ID, phone or course…"></label><label class="select-wrap"><span class="sr-only">Filter by course</span><select id="course-filter"><option value="">All courses</option></select></label><label class="select-wrap"><span class="sr-only">Filter by department</span><select id="department-filter"><option value="">All departments</option></select></label><label class="select-wrap"><span class="sr-only">Filter by status</span><select id="status-filter"><option value="">All statuses</option><option>Active</option><option>Inactive</option><option>Graduated</option></select></label></div>
+            <div class="table-scroll"><table><thead><tr><th>STUDENT</th><th>STUDENT ID</th><th>COURSE</th><th>DEPARTMENT</th><th>PHONE</th><th>STATUS</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="students-table-body"></tbody></table></div>
+            <div class="empty-state hidden" id="students-empty"><span class="empty-icon" aria-hidden="true">⌕</span><h3 id="students-empty-title">No students found</h3><p id="students-empty-copy">Try changing your search or filters.</p><button class="button button-primary hidden" id="empty-add-button" type="button" data-go="add-student" data-role="staff">＋ Add your first student</button></div>
+            <div class="table-footer" id="table-footer"></div>
+          </section>
+        </section>
+
+        <section class="page-view hidden" id="add-student-view" aria-labelledby="form-title">
+          <div class="page-intro"><div><p class="eyebrow">STUDENT RECORD</p><h1 id="form-title">Add Student</h1><p class="page-subtitle" id="form-subtitle">Add a new student to your directory.</p></div></div>
+          <form class="panel student-form" id="student-form" novalidate>
+            <input type="hidden" id="editing-id">
+            <div class="form-section"><div class="form-section-heading"><span class="section-number">01</span><div><h2>Personal information</h2><p>Basic details about the student</p></div></div>
+              <div class="form-grid"><div class="field full-width"><label for="full-name">Full name <span class="required">*</span></label><input id="full-name" name="name" autocomplete="name" placeholder="e.g. Ayesha Khan" required aria-describedby="name-error"><span class="field-error" id="name-error"></span></div>
+                <div class="field"><label for="email">Email address <span class="required">*</span></label><input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required aria-describedby="email-error"><span class="field-error" id="email-error"></span></div>
+                <div class="field"><label for="phone">Phone number <span class="optional">Optional</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="e.g. 0300 1234567"></div>
+                <div class="field"><label for="dob">Date of birth <span class="optional">Optional</span></label><input id="dob" name="dob" type="date"></div><div class="field"><label for="gender">Gender <span class="optional">Optional</span></label><select id="gender" name="gender"><option value="">Prefer not to provide</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Prefer not to say</option></select></div><div class="field full-width"><label for="address">Address <span class="optional">Optional</span></label><input id="address" name="address" autocomplete="street-address" maxlength="500"></div>
+              </div>
+            </div>
+            <div class="form-section"><div class="form-section-heading"><span class="section-number">02</span><div><h2>Academic information</h2><p>Enrollment and course details</p></div></div>
+              <div class="form-grid"><div class="field"><label for="student-id">Student ID <span class="optional">Auto-generated if empty</span></label><input id="student-id" name="id" placeholder="e.g. STU-1004" aria-describedby="id-error"><span class="field-error" id="id-error"></span></div>
+                <div class="field"><label for="course">Course <span class="required">*</span></label><select id="course" name="course" required aria-describedby="course-error"><option value="">Select a course</option></select><span class="field-error" id="course-error"></span></div>
+                <div class="field"><label for="department">Department <span class="optional">Optional</span></label><select id="department" name="department"><option value="">No department</option></select></div><div class="field"><label for="enrollment-date">Enrollment date <span class="optional">Optional</span></label><input id="enrollment-date" name="enrollmentDate" type="date"></div>
+                <div class="field"><label for="student-status">Status</label><select id="student-status" name="status"><option>Active</option><option>Inactive</option><option>Graduated</option></select></div>
+              </div>
+            </div>
+            <div class="form-actions"><button class="button button-secondary" type="button" data-go="students">Cancel</button><button class="button button-primary" type="submit" id="save-button">Save Student <span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+
+        <section class="page-view hidden" id="departments-view" aria-labelledby="departments-title"><div class="page-intro"><div><p class="eyebrow">ACADEMIC STRUCTURE</p><h1 id="departments-title">Departments</h1><p class="page-subtitle">Organize students by class or department.</p></div></div><section class="panel directory-panel"><form id="department-form" class="department-form" data-role="staff"><input type="hidden" id="department-edit-id"><label>Name <input id="department-name" required maxlength="100"></label><label>Code <input id="department-code" maxlength="20"></label><label>Description <input id="department-description" maxlength="500"></label><button class="button button-primary" type="submit">Save department</button><button class="button button-secondary hidden" id="department-cancel" type="button">Cancel edit</button></form><p id="department-message" class="table-footer"></p><div class="table-scroll"><table><thead><tr><th>NAME</th><th>CODE</th><th>DESCRIPTION</th><th>STUDENTS</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="departments-table-body"></tbody></table></div></section></section>
+        <section class="page-view hidden" id="attendance-view" aria-labelledby="attendance-title"><div class="page-intro"><div><p class="eyebrow">DAILY RECORDS</p><h1 id="attendance-title">Attendance</h1><p class="page-subtitle">Record and review student attendance.</p></div></div><section class="panel directory-panel"><form id="attendance-form" class="department-form" data-role="staff"><input type="hidden" id="attendance-edit-id"><label>Student <select id="attendance-student" required><option value="">Select student</option></select></label><label>Date <input id="attendance-date" type="date" required></label><label>Status <select id="attendance-status"><option>Present</option><option>Absent</option><option>Late</option></select></label><button class="button button-primary" type="submit">Save attendance</button><button class="button button-secondary hidden" id="attendance-cancel" type="button">Cancel edit</button></form><div class="directory-toolbar"><label>Date <input id="attendance-date-filter" type="date"></label><button id="attendance-load" type="button" class="button button-secondary">Show all dates</button></div><div class="table-scroll"><table><thead><tr><th>STUDENT</th><th>STUDENT ID</th><th>DATE</th><th>STATUS</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="attendance-table-body"></tbody></table></div><p class="table-footer" id="attendance-empty">No attendance records found.</p></section></section>
+        <section class="page-view hidden" id="profile-view" aria-labelledby="profile-title"><div class="page-intro"><div><p class="eyebrow">STUDENT PROFILE</p><h1 id="profile-title">Student details</h1></div><button class="button button-secondary" type="button" data-go="students">Back to students</button></div><section class="panel profile-card" id="profile-details" aria-live="polite"></section></section>
+      </div>
+      <footer class="app-footer"><span>CampusFlow Student Management</span><span>Authenticated student portal</span></footer>
+    </main>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <dialog class="confirm-dialog" id="delete-dialog" aria-labelledby="delete-title"><form method="dialog"><span class="dialog-icon" aria-hidden="true">!</span><h2 id="delete-title">Delete student?</h2><p id="delete-copy">This student record will be removed from this browser.</p><div class="dialog-actions"><button class="button button-secondary" value="cancel">Cancel</button><button class="button button-danger" id="confirm-delete" value="delete">Delete student</button></div></form></dialog>
+</body>
+</html>

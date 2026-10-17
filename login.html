@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5fb">
+  <title>Sign in · CampusFlow</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="login.js" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-card" aria-labelledby="login-title">
+    <a class="brand login-brand" href="index.html" aria-label="CampusFlow">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <span><strong>CampusFlow</strong><small>STUDENT PORTAL</small></span>
+    </a>
+    <p class="eyebrow">WELCOME BACK</p>
+    <h1 id="login-title">Sign in to your account</h1>
+    <p class="login-subtitle">Use the username and password provided by your administrator.</p>
+    <div class="login-message hidden" id="login-message" role="alert"></div>
+    <form id="login-form">
+      <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required autofocus></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="button button-primary login-submit" id="login-button" type="submit">Sign in</button>
+    </form>
+    <p class="login-footnote">Accounts are created by a site administrator.</p>
+  </main>
+</body>
+</html>
