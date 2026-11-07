@@ -6,3 +6,4 @@ env/
 __pycache__/
 *.py[cod]
 staticfiles/
+data_backup.json
