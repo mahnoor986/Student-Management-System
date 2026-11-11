@@ -54,6 +54,12 @@ class Student(models.Model):
         super().clean()
         validate_single_role(self.user, 'student')
 
+    def save(self, *args, **kwargs):
+        # Enforced on every save, not only in admin forms (audit L5).
+        if self.user_id:
+            validate_single_role(self.user, 'student')
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['last_name', 'first_name', 'id']
         constraints = [
@@ -106,6 +112,10 @@ class TeacherProfile(models.Model):
         super().clean()
         validate_single_role(getattr(self, 'user', None), 'teacher')
 
+    def save(self, *args, **kwargs):
+        validate_single_role(getattr(self, 'user', None), 'teacher')  # every save, not only admin forms (audit L5)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.user.get_full_name() or self.user.get_username()
 
@@ -121,6 +131,10 @@ class ParentProfile(models.Model):
     def clean(self):
         super().clean()
         validate_single_role(getattr(self, 'user', None), 'parent')
+
+    def save(self, *args, **kwargs):
+        validate_single_role(getattr(self, 'user', None), 'parent')  # every save, not only admin forms (audit L5)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.get_username()
