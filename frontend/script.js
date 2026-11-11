@@ -129,22 +129,34 @@
     summary = await apiRequest('/students/summary/');
     renderStats(); renderRecent();
   }
-  function responseItems(data) { return Array.isArray(data) ? data : (data.results || []); }
+  // List endpoints are paginated (100 per page); follow the `next` links to collect every page.
+  async function apiList(path) {
+    let items = [];
+    let next = path;
+    for (let page = 0; next && page < 100; page += 1) {
+      const data = await apiRequest(next);
+      if (Array.isArray(data)) return data;
+      items = items.concat(data.results || []);
+      next = null;
+      if (data.next) {
+        const url = new URL(data.next);
+        next = url.pathname.replace(/^\/api/, '') + url.search;
+      }
+    }
+    return items;
+  }
   async function loadDepartments() {
-    const data = await apiRequest('/departments/');
-    departments = responseItems(data);
+    departments = await apiList('/departments/');
     renderCourseOptions();
     $('#departments-table-body').innerHTML = departments.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${escapeHTML(item.code || '—')}</td><td>${escapeHTML(item.description || '—')}</td><td>${Number(item.student_count || 0)}</td><td>${isStaff ? `<div class="row-actions"><button class="icon-button" data-department-action="edit" data-id="${Number(item.id)}" type="button">Edit</button><button class="icon-button delete-action" data-department-action="delete" data-id="${Number(item.id)}" type="button">Delete</button></div>` : ''}</td></tr>`).join('');
     $('#department-message').textContent = departments.length ? '' : 'No departments have been added yet.';
   }
   async function loadAttendance() {
     try {
-      const [attendanceData, studentData] = await Promise.all([
-        apiRequest(`/attendance/${$('#attendance-date-filter').value ? `?date=${encodeURIComponent($('#attendance-date-filter').value)}` : ''}`),
-        apiRequest('/students/')
+      const [records, roster] = await Promise.all([
+        apiList(`/attendance/${$('#attendance-date-filter').value ? `?date=${encodeURIComponent($('#attendance-date-filter').value)}` : ''}`),
+        apiList('/students/')
       ]);
-      const records = responseItems(attendanceData);
-      const roster = responseItems(studentData);
       $('#attendance-student').innerHTML = '<option value="">Select student</option>' + roster.map(item => `<option value="${Number(item.id)}">${escapeHTML(item.name)} (${escapeHTML(item.student_id)})</option>`).join('');
       $('#attendance-table-body').innerHTML = records.map(item => `<tr><td>${escapeHTML(item.student_full_name)}</td><td>${escapeHTML(item.student_id)}</td><td>${escapeHTML(item.date)}</td><td>${statusCell(item.status)}</td><td>${canRecordAttendance ? `<button class="icon-button" type="button" data-attendance-edit="${Number(item.id)}" data-student="${Number(item.student)}" data-date="${escapeHTML(item.date)}" data-status="${escapeHTML(item.status)}">Edit</button>` : ''}</td></tr>`).join('');
       $('#attendance-empty').classList.toggle('hidden', records.length > 0);
@@ -179,9 +191,9 @@
     els.studentsEmpty.classList.add('hidden');
     setRowsMessage(els.studentsBody, '#students-view .table-scroll', 'Loading student records…');
     try {
-      const data = await apiRequest(`/students/${listQuery()}`);
+      const rows = await apiList(`/students/${listQuery()}`);
       if (sequence !== requestSequence) return;
-      students = Array.isArray(data) ? data : data.results;
+      students = rows;
       renderStudents();
     } catch (error) {
       if (sequence !== requestSequence) return;
@@ -389,7 +401,7 @@
       $('#auth-gate').classList.add('hidden');
       $('#app-shell').classList.remove('hidden');
       $('#today-label').textContent = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date());
-      departments = responseItems(await apiRequest('/departments/'));
+      departments = await apiList('/departments/');
       $('#attendance-date').value = new Date().toISOString().slice(0, 10);
       renderCourseOptions();
       const initialPage = location.hash.slice(1);

@@ -14,6 +14,12 @@ from .models import Attendance, ClassSection, ParentProfile, Student, TeacherPro
 User = get_user_model()
 
 
+def results(response):
+    """List payload whether or not the endpoint is paginated (pagination added for audit L7)."""
+    data = response.data
+    return data['results'] if isinstance(data, dict) and 'results' in data else data
+
+
 class RoleAccessTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -50,7 +56,7 @@ class RoleAccessTests(APITestCase):
         cls.att_b = Attendance.objects.create(student=cls.student_b, date='2026-01-05', status='Absent')
 
     def ids(self, response):
-        return sorted(item['student_id'] if 'student_id' in item else item['id'] for item in response.data)
+        return sorted(item['student_id'] if 'student_id' in item else item['id'] for item in results(response))
 
     def as_user(self, user):
         self.client.force_authenticate(user=user)
@@ -66,7 +72,7 @@ class RoleAccessTests(APITestCase):
 
     def test_login_without_a_role_sees_nothing(self):
         self.as_user(self.unlinked)
-        self.assertEqual(self.client.get('/api/students/').data, [])
+        self.assertEqual(results(self.client.get('/api/students/')), [])
         self.assertEqual(self.client.get(f'/api/students/{self.student_a.pk}/').status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(self.client.get('/api/auth/me/').data['user']['role'], 'none')
 
@@ -103,7 +109,7 @@ class RoleAccessTests(APITestCase):
     def test_staff_and_viewer_see_everyone(self):
         for user in (self.staff, self.viewer):
             self.as_user(user)
-            self.assertEqual(len(self.client.get('/api/students/').data), 4)
+            self.assertEqual(len(results(self.client.get('/api/students/'))), 4)
 
     def test_summary_is_scoped(self):
         self.as_user(self.parent_b)
@@ -135,7 +141,7 @@ class RoleAccessTests(APITestCase):
     # --- attendance ----------------------------------------------------------
     def test_attendance_is_scoped(self):
         self.as_user(self.user_student_a)
-        self.assertEqual([r['id'] for r in self.client.get('/api/attendance/').data], [self.att_a.pk])
+        self.assertEqual([r['id'] for r in results(self.client.get('/api/attendance/'))], [self.att_a.pk])
         self.assertEqual(self.client.get(f'/api/attendance/{self.att_b.pk}/').status_code, status.HTTP_404_NOT_FOUND)
 
     def test_teacher_records_attendance_only_for_own_students(self):
@@ -161,11 +167,11 @@ class RoleAccessTests(APITestCase):
     # --- classes -------------------------------------------------------------
     def test_classes_are_scoped(self):
         self.as_user(self.teacher_b)
-        self.assertEqual([c['name'] for c in self.client.get('/api/classes/').data], ['BUS-1A'])
+        self.assertEqual([c['name'] for c in results(self.client.get('/api/classes/'))], ['BUS-1A'])
         self.as_user(self.parent_a)
-        self.assertEqual([c['name'] for c in self.client.get('/api/classes/').data], ['CS-1A'])
+        self.assertEqual([c['name'] for c in results(self.client.get('/api/classes/'))], ['CS-1A'])
         self.as_user(self.staff)
-        self.assertEqual(len(self.client.get('/api/classes/').data), 2)
+        self.assertEqual(len(results(self.client.get('/api/classes/'))), 2)
 
 
 class SeedDemoAccountsTests(APITestCase):

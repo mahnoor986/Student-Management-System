@@ -13,6 +13,12 @@ from .models import Attendance, Department, Student
 User = get_user_model()
 
 
+def results(response):
+    """List payload whether or not the endpoint is paginated (pagination added for audit L7)."""
+    data = response.data
+    return data['results'] if isinstance(data, dict) and 'results' in data else data
+
+
 class StudentAPITests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(username='staff-test', password='Valid-test-password-983!', is_staff=True)
@@ -39,7 +45,7 @@ class StudentAPITests(APITestCase):
         self.create_student()
         response = self.client.get('/api/students/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(results(response)), 1)
 
     def test_create_student(self):
         response = self.client.post('/api/students/', self.payload(), format='json')
@@ -102,9 +108,9 @@ class StudentAPITests(APITestCase):
         self.create_student(student_id='STU-1002', email='hamza@example.com', first_name='Hamza', course='Data Science', status=Student.Status.INACTIVE)
         searched = self.client.get('/api/students/', {'search': 'Hamza Data'})
         filtered = self.client.get('/api/students/', {'course': 'Computer Science', 'status': 'Active'})
-        self.assertEqual(len(searched.data), 1)
-        self.assertEqual(searched.data[0]['student_id'], 'STU-1002')
-        self.assertEqual(len(filtered.data), 1)
+        self.assertEqual(len(results(searched)), 1)
+        self.assertEqual(results(searched)[0]['student_id'], 'STU-1002')
+        self.assertEqual(len(results(filtered)), 1)
 
     def test_missing_student(self):
         response = self.client.get('/api/students/9999/')
@@ -232,8 +238,8 @@ class PhaseFourAPITests(APITestCase):
     def test_student_profile_fields_and_department_filter(self):
         response = self.client.get('/api/students/', {'department': self.department.pk})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0]['department_name'], 'Science')
-        self.assertEqual(self.client.get('/api/departments/').data[0]['student_count'], 1)
+        self.assertEqual(results(response)[0]['department_name'], 'Science')
+        self.assertEqual(results(self.client.get('/api/departments/'))[0]['student_count'], 1)
         self.assertEqual(self.client.get(f'/api/students/{self.student.pk}/').data['address'], '12 Example Road')
 
     def test_department_delete_is_blocked_when_students_use_it(self):
@@ -286,4 +292,4 @@ class SeedStudentsCommandTests(APITestCase):
         self.assertEqual(summary.data['inactive_students'], 3)
         self.assertEqual(summary.data['graduated_students'], 2)
         self.assertEqual(listed.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(listed.data), 15)
+        self.assertEqual(len(results(listed)), 15)
