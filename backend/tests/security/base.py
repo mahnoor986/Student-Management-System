@@ -45,7 +45,7 @@ class SecurityTestCase(APITestCase):
 
         cls.u_unlinked = make_user('unlinked')
         cls.u_viewer = make_user('viewer')
-        cls.u_viewer.groups.add(Group.objects.create(name=VIEWERS_GROUP))
+        cls.u_viewer.groups.add(Group.objects.get_or_create(name=VIEWERS_GROUP)[0])
 
         app_perms = Permission.objects.filter(content_type__app_label='students')
         cls.u_staff_limited = make_user('staff_limited', is_staff=True)
