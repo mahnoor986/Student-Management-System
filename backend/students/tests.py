@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.test import Client
 from django.core.management import call_command
 from io import StringIO
@@ -16,6 +16,7 @@ User = get_user_model()
 class StudentAPITests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(username='staff-test', password='Valid-test-password-983!', is_staff=True)
+        self.staff.user_permissions.set(Permission.objects.filter(content_type__app_label='students'))  # API writes need model perms (audit M2)
         self.client.force_authenticate(user=self.staff)
 
     def payload(self, **overrides):
@@ -221,6 +222,7 @@ class SessionAuthenticationTests(APITestCase):
 class PhaseFourAPITests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(username='phase4-staff', password='Strong-test-password-983!', is_staff=True)
+        self.staff.user_permissions.set(Permission.objects.filter(content_type__app_label='students'))  # API writes need model perms (audit M2)
         self.reader = User.objects.create_user(username='phase4-reader', password='Strong-test-password-983!')
         self.reader.groups.add(Group.objects.get(name='Viewers'))  # read-only access is opt-in (audit H2)
         self.client.force_authenticate(user=self.staff)

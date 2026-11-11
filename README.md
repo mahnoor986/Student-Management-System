@@ -17,7 +17,7 @@ Each login has exactly one role. All rules live in `backend/students/access.py` 
 
 | Role | How it is set up (Django Admin) | Sees | Can change |
 |---|---|---|---|
-| **Staff** | `is_staff` on the user | All students, classes, departments, attendance | Everything |
+| **Staff** | `is_staff` on the user, plus Django model permissions (or superuser) | All students, classes, departments, attendance | Only what their add/change/delete permissions allow (same as Django Admin) |
 | **Teacher** | *Teachers* → link a login and pick classes | Students in their classes and their attendance | Attendance for their own students (not delete) |
 | **Student** | *Students* → set the record's *User* | Their own record and attendance | Nothing |
 | **Parent** | *Parents* → link a login and pick children | Their children's records and attendance | Nothing |
