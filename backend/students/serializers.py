@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .access import can_view_private_details, visible_students
+from .access import STAFF, TEACHER, can_view_private_details, get_role, visible_students
 from .models import Attendance, ClassSection, Department, Student
 
 
@@ -9,6 +9,13 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ['id', 'name', 'code', 'description', 'student_count', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Organisation-wide enrolment numbers are for staff only (audit L9).
+        if get_role(getattr(self.context.get('request'), 'user', None)) != STAFF:
+            data.pop('student_count', None)
+        return data
 
     def validate_name(self, value):
         value = value.strip()
@@ -130,6 +137,13 @@ class ClassSectionSerializer(serializers.ModelSerializer):
 
     def get_teacher_names(self, obj):
         return [str(teacher) for teacher in obj.teachers.select_related('user')]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Class sizes are for staff and the class's teachers, not students or parents (audit L9).
+        if get_role(getattr(self.context.get('request'), 'user', None)) not in (STAFF, TEACHER):
+            data.pop('student_count', None)
+        return data
 
     def validate_name(self, value):
         value = value.strip()

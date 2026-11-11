@@ -148,7 +148,7 @@
   async function loadDepartments() {
     departments = await apiList('/departments/');
     renderCourseOptions();
-    $('#departments-table-body').innerHTML = departments.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${escapeHTML(item.code || '—')}</td><td>${escapeHTML(item.description || '—')}</td><td>${Number(item.student_count || 0)}</td><td>${isStaff ? `<div class="row-actions"><button class="icon-button" data-department-action="edit" data-id="${Number(item.id)}" type="button">Edit</button><button class="icon-button delete-action" data-department-action="delete" data-id="${Number(item.id)}" type="button">Delete</button></div>` : ''}</td></tr>`).join('');
+    $('#departments-table-body').innerHTML = departments.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${escapeHTML(item.code || '—')}</td><td>${escapeHTML(item.description || '—')}</td><td>${escapeHTML(item.student_count ?? "—")}</td><td>${isStaff ? `<div class="row-actions"><button class="icon-button" data-department-action="edit" data-id="${Number(item.id)}" type="button">Edit</button><button class="icon-button delete-action" data-department-action="delete" data-id="${Number(item.id)}" type="button">Delete</button></div>` : ''}</td></tr>`).join('');
     $('#department-message').textContent = departments.length ? '' : 'No departments have been added yet.';
   }
   async function loadAttendance() {

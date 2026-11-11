@@ -2,9 +2,13 @@
 import re
 from pathlib import Path
 
+from unittest import mock
+
 from django.conf import settings
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 from students.models import Student
+from students.views import StudentDetailView
 
 from .base import PASSWORD, SecurityTestCase
 
@@ -125,9 +129,20 @@ class XSSTests(SecurityTestCase):
         self.assertEqual(response['Content-Type'], 'application/json')
         self.assertEqual(response.data['first_name'], XSS)
 
-    def test_browsable_api_html_escapes_payload(self):
+    def test_browsable_api_is_off_by_default(self):
+        """Audit L9: the HTML API is only offered when DEBUG is on, so it never renders the payload."""
         self.login_as(self.u_staff)
-        html = self.client.get(f'/api/students/{self.student_a.pk}/', HTTP_ACCEPT='text/html').content.decode()
+        response = self.client.get(f'/api/students/{self.student_a.pk}/', HTTP_ACCEPT='text/html')
+        self.assertEqual(response.status_code, 406)
+        self.assertNotIn(XSS, response.content.decode())
+
+    def test_browsable_api_html_escapes_payload_when_enabled(self):
+        """When a developer turns the HTML API on, stored payloads are still escaped."""
+        # DRF copies DEFAULT_RENDERER_CLASSES onto each view class at import time, so patch the view itself.
+        renderers = [JSONRenderer, BrowsableAPIRenderer]
+        with mock.patch.object(StudentDetailView, 'renderer_classes', renderers):
+            self.login_as(self.u_staff)
+            html = self.client.get(f'/api/students/{self.student_a.pk}/', HTTP_ACCEPT='text/html').content.decode()
         self.assertNotIn(XSS, html)
         self.assertIn('&lt;script&gt;', html)
 

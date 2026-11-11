@@ -84,7 +84,8 @@ CSRF_COOKIE_SECURE = SECURE_COOKIES
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_AUTHENTICATION_CLASSES': ['students.authentication.SessionAuthenticationWithChallenge'],
-    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.BrowsableAPIRenderer'],
+    # The browsable HTML API reveals the API's structure; only offer it in development (audit L9).
+    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'] + (['rest_framework.renderers.BrowsableAPIRenderer'] if DEBUG else []),
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
     'DEFAULT_THROTTLE_RATES': {'login': '10/minute', 'password_change': '5/minute'},
     # Bounded list responses (audit L7); the dashboard follows 'next' links.
