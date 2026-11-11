@@ -24,4 +24,10 @@ class StudentsConfig(AppConfig):
     name = 'students'
 
     def ready(self):
+        from django.contrib.auth.signals import user_logged_in, user_login_failed
+
+        from .login_limits import clear_username, record_failure
+
         post_migrate.connect(enable_row_level_security, sender=self, dispatch_uid='students.enable_rls')
+        user_login_failed.connect(record_failure, dispatch_uid='students.record_login_failure')
+        user_logged_in.connect(clear_username, dispatch_uid='students.clear_login_failures')
