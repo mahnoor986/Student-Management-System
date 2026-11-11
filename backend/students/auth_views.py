@@ -11,6 +11,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .access import get_role
+from .login_limits import BLOCKED_MESSAGE, username_blocked
 
 
 def user_data(user):
@@ -46,6 +47,9 @@ class LoginView(APIView):
         if not isinstance(username, str) or not isinstance(password, str) or not username.strip() or not password:
             return Response({'detail': 'Enter a username and password.'}, status=status.HTTP_400_BAD_REQUEST)
         username = username.strip()
+        # Per-account lockout on top of the per-IP throttle, so rotating IPs does not help (audit L4).
+        if username_blocked(username):
+            return Response({'detail': BLOCKED_MESSAGE}, status=status.HTTP_429_TOO_MANY_REQUESTS)
         user = authenticate(request=request, username=username, password=password)
         if user is None:
             return Response({'detail': 'Invalid username or password.'}, status=status.HTTP_401_UNAUTHORIZED)
