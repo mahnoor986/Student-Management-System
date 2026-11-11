@@ -72,5 +72,5 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['students.authentication.SessionAuthenticationWithChallenge'],
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.BrowsableAPIRenderer'],
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
-    'DEFAULT_THROTTLE_RATES': {'login': '10/minute'},
+    'DEFAULT_THROTTLE_RATES': {'login': '10/minute', 'password_change': '5/minute'},
 }

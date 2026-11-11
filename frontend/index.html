@@ -40,7 +40,7 @@
       <header class="topbar">
         <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
         <div class="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong id="page-heading">Dashboard</strong></div>
-        <div class="topbar-actions"><span class="today-label" id="today-label"></span><span class="user-badge" id="auth-user"></span><button class="button button-secondary button-small" type="button" id="logout-button">Log out</button><button class="button button-primary button-small" type="button" data-go="add-student" data-role="staff"><span aria-hidden="true">＋</span> Add Student</button></div>
+        <div class="topbar-actions"><span class="today-label" id="today-label"></span><span class="user-badge" id="auth-user"></span><button class="button button-secondary button-small" type="button" id="password-button">Change password</button><button class="button button-secondary button-small" type="button" id="logout-button">Log out</button><button class="button button-primary button-small" type="button" data-go="add-student" data-role="staff"><span aria-hidden="true">＋</span> Add Student</button></div>
       </header>
 
       <div class="page-wrap">
@@ -95,6 +95,7 @@
     </main>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <dialog class="confirm-dialog" id="password-dialog" aria-labelledby="password-title"><form id="password-form" novalidate><h2 id="password-title">Change password</h2><div class="field"><label for="current-password">Current password</label><input id="current-password" type="password" autocomplete="current-password" required></div><div class="field"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="8" required></div><div class="field"><label for="confirm-password">Confirm new password</label><input id="confirm-password" type="password" autocomplete="new-password" required></div><p class="field-error" id="password-message" role="alert"></p><div class="dialog-actions"><button class="button button-secondary" type="button" id="password-cancel">Cancel</button><button class="button button-primary" type="submit" id="password-save">Change password</button></div></form></dialog>
   <dialog class="confirm-dialog" id="delete-dialog" aria-labelledby="delete-title"><form method="dialog"><span class="dialog-icon" aria-hidden="true">!</span><h2 id="delete-title">Delete student?</h2><p id="delete-copy">This student record will be removed from this browser.</p><div class="dialog-actions"><button class="button button-secondary" value="cancel">Cancel</button><button class="button button-danger" id="confirm-delete" value="delete">Delete student</button></div></form></dialog>
 </body>
 </html>

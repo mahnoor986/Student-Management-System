@@ -87,6 +87,7 @@ Open <http://127.0.0.1:8000/admin/> and sign in with a staff account to create r
 - `GET /api/auth/csrf/` — obtain a CSRF token for the browser session.
 - `POST /api/auth/login/` — sign in with username and password.
 - `GET /api/auth/me/` — retrieve the signed-in user's name and staff role.
+- `POST /api/auth/password/` — change your own password (`current_password`, `new_password`); other sessions are signed out.
 - `POST /api/auth/logout/` — end the current session.
 - `/api/students/` and `/api/students/<id>/` — student list/search/filter and detail CRUD. All requests require a signed-in user; writes require staff.
 - `GET /api/students/summary/` — dashboard statistics; signed-in users only.

@@ -1,4 +1,6 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
@@ -58,6 +60,35 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordChangeView(APIView):
+    """Signed-in users change their own password (audit finding M4).
+
+    Requires the current password; the new one must pass Django's password validators.
+    CSRF is enforced by session authentication. Other sessions of the user are signed out
+    (their session hash no longer matches); this session stays signed in.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'password_change'
+
+    def post(self, request):
+        data = request.data if isinstance(request.data, dict) else {}
+        current, new = data.get('current_password'), data.get('new_password')
+        if not isinstance(current, str) or not isinstance(new, str) or not current or not new:
+            return Response({'detail': 'Enter your current password and a new password.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        if not user.check_password(current):
+            return Response({'current_password': ['Your current password is incorrect.']}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            validate_password(new, user)
+        except DjangoValidationError as error:
+            return Response({'new_password': list(error.messages)}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(new)
+        user.save(update_fields=['password'])
+        update_session_auth_hash(request, user)
+        return Response({'detail': 'Password changed.'})
 
 
 class CurrentUserView(APIView):

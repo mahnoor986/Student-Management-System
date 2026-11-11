@@ -407,6 +407,24 @@
     $('#auth-gate-message').textContent = 'Connecting securely to your student portal…';
     initializeDashboard();
   });
+  const passwordDialog = $('#password-dialog');
+  const passwordForm = $('#password-form');
+  const passwordMessage = $('#password-message');
+  $('#password-button').addEventListener('click', () => { passwordForm.reset(); passwordMessage.textContent = ''; passwordDialog.showModal(); });
+  $('#password-cancel').addEventListener('click', () => passwordDialog.close());
+  passwordForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const current = $('#current-password').value;
+    const next = $('#new-password').value;
+    if (!current || !next) { passwordMessage.textContent = 'Enter your current password and a new password.'; return; }
+    if (next !== $('#confirm-password').value) { passwordMessage.textContent = 'The new passwords do not match.'; return; }
+    const button = $('#password-save'); button.disabled = true;
+    try {
+      await apiRequest('/auth/password/', { method: 'POST', body: JSON.stringify({ current_password: current, new_password: next }) });
+      passwordDialog.close(); toast('Password changed. Other devices have been signed out.');
+    } catch (error) { passwordMessage.textContent = error.message; }
+    finally { button.disabled = false; passwordForm.reset(); }
+  });
   $('#logout-button').addEventListener('click', async event => {
     const button = event.currentTarget; button.disabled = true; button.textContent = 'Signing out…';
     try {
