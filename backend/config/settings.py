@@ -66,6 +66,13 @@ CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:5500', 'http://localhost:5500']
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
+# Sign users out after 8 hours instead of Django's 2-week default (audit finding L2).
+SESSION_COOKIE_AGE = 8 * 60 * 60
+# Set DJANGO_SECURE_COOKIES=true once the site is served over HTTPS so cookies are never sent in clear text.
+# Leave it off for local http://127.0.0.1 development, where Secure cookies would block sign-in.
+SECURE_COOKIES = os.environ.get('DJANGO_SECURE_COOKIES', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = SECURE_COOKIES
+CSRF_COOKIE_SECURE = SECURE_COOKIES
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
