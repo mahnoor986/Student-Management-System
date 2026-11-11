@@ -8,9 +8,16 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from .access import get_role
+
 
 def user_data(user):
-    return {'username': user.get_username(), 'is_staff': user.is_staff}
+    return {
+        'username': user.get_username(),
+        'display_name': user.get_full_name() or user.get_username(),
+        'is_staff': user.is_staff,
+        'role': get_role(user),
+    }
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')

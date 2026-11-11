@@ -24,6 +24,9 @@
   let csrfToken = '';
   let currentUser = null;
   let isStaff = false;
+  let canRecordAttendance = false;
+  let seesEveryone = false;
+  const ROLE_LABELS = { staff: 'Staff', teacher: 'Teacher', parent: 'Parent', student: 'Student', viewer: 'Read only' };
 
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -81,7 +84,7 @@
   }
   function renderStats() {
     const cards = [
-      ['Total Students', summary.total_students, 'All database records', '♧', 'purple'],
+      ['Total Students', summary.total_students, seesEveryone ? 'All database records' : 'Students linked to you', '♧', 'purple'],
       ['Active Students', summary.active_students, 'Currently active', '✓', 'green'],
       ['Inactive Students', summary.inactive_students, 'Not currently active', '◷', 'orange'],
       ['Graduated Students', summary.graduated_students, 'Completed studies', '✦', 'blue'],
@@ -143,7 +146,7 @@
       const records = responseItems(attendanceData);
       const roster = responseItems(studentData);
       $('#attendance-student').innerHTML = '<option value="">Select student</option>' + roster.map(item => `<option value="${Number(item.id)}">${escapeHTML(item.name)} (${escapeHTML(item.student_id)})</option>`).join('');
-      $('#attendance-table-body').innerHTML = records.map(item => `<tr><td>${escapeHTML(item.student_full_name)}</td><td>${escapeHTML(item.student_id)}</td><td>${escapeHTML(item.date)}</td><td>${statusCell(item.status)}</td><td>${isStaff ? `<button class="icon-button" type="button" data-attendance-edit="${Number(item.id)}" data-student="${Number(item.student)}" data-date="${escapeHTML(item.date)}" data-status="${escapeHTML(item.status)}">Edit</button>` : ''}</td></tr>`).join('');
+      $('#attendance-table-body').innerHTML = records.map(item => `<tr><td>${escapeHTML(item.student_full_name)}</td><td>${escapeHTML(item.student_id)}</td><td>${escapeHTML(item.date)}</td><td>${statusCell(item.status)}</td><td>${canRecordAttendance ? `<button class="icon-button" type="button" data-attendance-edit="${Number(item.id)}" data-student="${Number(item.student)}" data-date="${escapeHTML(item.date)}" data-status="${escapeHTML(item.status)}">Edit</button>` : ''}</td></tr>`).join('');
       $('#attendance-empty').classList.toggle('hidden', records.length > 0);
     } catch (error) { toast(error.message, 'error'); }
   }
@@ -153,10 +156,11 @@
       $('#profile-title').textContent = student.name;
       const values = [
         ['Student ID', student.student_id], ['Full name', student.name], ['Email', student.email], ['Phone', student.phone],
-        ['Date of birth', student.date_of_birth], ['Gender', student.gender], ['Course', student.course], ['Department', student.department_name],
+        ['Date of birth', student.date_of_birth], ['Gender', student.gender], ['Course', student.course], ['Department', student.department_name], ['Class', student.class_name],
         ['Enrollment date', student.enrollment_date], ['Status', student.status]
       ];
-      if (isStaff && student.address) values.push(['Address', student.address]);
+      // The API only includes the address for staff, the student themself and their parents.
+      if ('address' in student) values.push(['Address', student.address]);
       $('#profile-details').innerHTML = `<dl class="profile-grid">${values.map(([label, value]) => `<div><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value || 'Not provided')}</dd></div>`).join('')}</dl>${isStaff ? `<button class="button button-primary" type="button" data-profile-edit="${Number(student.id)}">Edit profile</button>` : ''}`;
       navigate('profile');
     } catch (error) { toast(error.message, 'error'); }
@@ -342,14 +346,14 @@
   });
   $('#department-cancel').addEventListener('click', () => { $('#department-form').reset(); $('#department-edit-id').value = ''; $('#department-cancel').classList.add('hidden'); });
   $('#attendance-form').addEventListener('submit', async event => {
-    event.preventDefault(); if (!isStaff) return;
+    event.preventDefault(); if (!canRecordAttendance) return;
     const id = $('#attendance-edit-id').value;
     const payload = { student: Number($('#attendance-student').value), date: $('#attendance-date').value, status: $('#attendance-status').value };
     try { await apiRequest(id ? `/attendance/${Number(id)}/` : '/attendance/', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(payload) }); toast(id ? 'Attendance updated.' : 'Attendance recorded.'); event.currentTarget.reset(); $('#attendance-edit-id').value = ''; $('#attendance-date').value = new Date().toISOString().slice(0, 10); $('#attendance-cancel').classList.add('hidden'); await loadAttendance(); }
     catch (error) { toast(error.message, 'error'); }
   });
   $('#attendance-table-body').addEventListener('click', event => {
-    const button = event.target.closest('[data-attendance-edit]'); if (!button || !isStaff) return;
+    const button = event.target.closest('[data-attendance-edit]'); if (!button || !canRecordAttendance) return;
     $('#attendance-edit-id').value = button.dataset.attendanceEdit; $('#attendance-student').value = button.dataset.student; $('#attendance-date').value = button.dataset.date; $('#attendance-status').value = button.dataset.status; $('#attendance-cancel').classList.remove('hidden');
   });
   $('#attendance-cancel').addEventListener('click', () => { $('#attendance-form').reset(); $('#attendance-edit-id').value = ''; $('#attendance-date').value = new Date().toISOString().slice(0, 10); $('#attendance-cancel').classList.add('hidden'); });
@@ -376,8 +380,12 @@
       const result = await response.json();
       currentUser = result.user;
       isStaff = Boolean(currentUser.is_staff);
-      $('#auth-user').textContent = `${currentUser.username} · ${isStaff ? 'Staff' : 'Read only'}`;
+      // UI hints only: the API enforces every one of these rules on the server.
+      canRecordAttendance = ['staff', 'teacher'].includes(currentUser.role);
+      seesEveryone = ['staff', 'viewer'].includes(currentUser.role);
+      $('#auth-user').textContent = `${currentUser.display_name || currentUser.username} · ${ROLE_LABELS[currentUser.role] || 'Read only'}`;
       $$('[data-role="staff"]').forEach(control => control.classList.toggle('hidden', !isStaff));
+      $$('[data-role="attendance"]').forEach(control => control.classList.toggle('hidden', !canRecordAttendance));
       $('#auth-gate').classList.add('hidden');
       $('#app-shell').classList.remove('hidden');
       $('#today-label').textContent = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date());

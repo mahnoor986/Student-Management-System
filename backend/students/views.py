@@ -1,11 +1,19 @@
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from rest_framework import generics, status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Attendance, Department, Student
-from .serializers import AttendanceSerializer, DepartmentSerializer, StudentSerializer
-from .permissions import StaffWritePermission
+from .access import visible_attendance, visible_classes, visible_students
+from .models import Department, Student
+from .serializers import AttendanceSerializer, ClassSectionSerializer, DepartmentSerializer, StudentSerializer
+from .permissions import AttendancePermission, StaffWritePermission
+
+
+def conflict(message):
+    error = APIException(message)
+    error.status_code = status.HTTP_409_CONFLICT
+    return error
 
 
 class StudentListCreateView(generics.ListCreateAPIView):
@@ -13,10 +21,11 @@ class StudentListCreateView(generics.ListCreateAPIView):
     permission_classes = [StaffWritePermission]
 
     def get_queryset(self):
-        queryset = Student.objects.all()
+        queryset = visible_students(self.request.user).select_related('department', 'class_section')
         search = self.request.query_params.get('search', '').strip()
         course = self.request.query_params.get('course', '').strip()
         department = self.request.query_params.get('department', '').strip()
+        class_section = self.request.query_params.get('class', '').strip()
         status = self.request.query_params.get('status', '').strip()
         if search:
             for term in search.split():
@@ -25,24 +34,25 @@ class StudentListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(course__iexact=course)
         if department:
             queryset = queryset.filter(department_id=department)
+        if class_section:
+            queryset = queryset.filter(class_section_id=class_section)
         if status:
             queryset = queryset.filter(status=status)
         return queryset
 
 
 class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Student.objects.all()
     serializer_class = StudentSerializer
     permission_classes = [StaffWritePermission]
+
+    def get_queryset(self):
+        return visible_students(self.request.user).select_related('department', 'class_section')
 
     def perform_destroy(self, instance):
         try:
             instance.delete()
         except ProtectedError:
-            from rest_framework.exceptions import APIException
-            error = APIException('This student has attendance records and cannot be deleted. Keep the record or remove attendance history first.')
-            error.status_code = status.HTTP_409_CONFLICT
-            raise error
+            raise conflict('This student has attendance records and cannot be deleted. Keep the record or remove attendance history first.')
 
 
 class DepartmentListCreateView(generics.ListCreateAPIView):
@@ -60,18 +70,37 @@ class DepartmentDetailView(generics.RetrieveUpdateDestroyAPIView):
         try:
             instance.delete()
         except ProtectedError:
-            from rest_framework.exceptions import APIException
-            error = APIException('This department still has students. Reassign those students before deleting the department.')
-            error.status_code = status.HTTP_409_CONFLICT
-            raise error
+            raise conflict('This department still has students or classes. Reassign them before deleting the department.')
+
+
+class ClassSectionListCreateView(generics.ListCreateAPIView):
+    serializer_class = ClassSectionSerializer
+    permission_classes = [StaffWritePermission]
+
+    def get_queryset(self):
+        return visible_classes(self.request.user).select_related('department')
+
+
+class ClassSectionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ClassSectionSerializer
+    permission_classes = [StaffWritePermission]
+
+    def get_queryset(self):
+        return visible_classes(self.request.user).select_related('department')
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise conflict('This class still has students. Move them to another class before deleting it.')
 
 
 class AttendanceListCreateView(generics.ListCreateAPIView):
     serializer_class = AttendanceSerializer
-    permission_classes = [StaffWritePermission]
+    permission_classes = [AttendancePermission]
 
     def get_queryset(self):
-        queryset = Attendance.objects.select_related('student')
+        queryset = visible_attendance(self.request.user)
         student = self.request.query_params.get('student')
         attendance_date = self.request.query_params.get('date')
         if student:
@@ -82,14 +111,16 @@ class AttendanceListCreateView(generics.ListCreateAPIView):
 
 
 class AttendanceDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Attendance.objects.select_related('student')
     serializer_class = AttendanceSerializer
-    permission_classes = [StaffWritePermission]
+    permission_classes = [AttendancePermission]
+
+    def get_queryset(self):
+        return visible_attendance(self.request.user)
 
 
 class StudentSummaryView(APIView):
     def get(self, request):
-        queryset = Student.objects.all()
+        queryset = visible_students(request.user)
         counts = {key.lower(): queryset.filter(status=key).count() for key, _ in Student.Status.choices}
         return Response({
             'total_students': queryset.count(),

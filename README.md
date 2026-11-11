@@ -12,8 +12,18 @@ CampusFlow is a local student-management app with a responsive HTML/CSS/vanilla-
 
 ## Roles and access
 
-- **Staff/admin accounts** can view the dashboard and student records and create, edit, or delete records. Create the first administrator with Django's `createsuperuser` command. Staff can add regular users through Django Admin.
-- **Regular signed-in users** can view the dashboard and student records, but cannot mutate records.
+Each login has exactly one role. All rules live in `backend/students/access.py` and are enforced by the API.
+
+| Role | How it is set up (Django Admin) | Sees | Can change |
+|---|---|---|---|
+| **Staff** | `is_staff` on the user | All students, classes, departments, attendance | Everything |
+| **Teacher** | *Teachers* → link a login and pick classes | Students in their classes and their attendance | Attendance for their own students (not delete) |
+| **Student** | *Students* → set the record's *User* | Their own record and attendance | Nothing |
+| **Parent** | *Parents* → link a login and pick children | Their children's records and attendance | Nothing |
+| **Read only** | A signed-in user with none of the above | All students, without addresses | Nothing |
+
+Addresses are shown only to staff, the student themself and their parents. Classes (`/api/classes/`) group students; teachers are assigned to classes. Create the first administrator with `createsuperuser`; staff add other logins in Django Admin. `python manage.py seed_demo_accounts` creates fictional demo classes and two logins of each role (prints the password once).
+
 - **Anonymous visitors** are sent to `login.html`; all student and dashboard API endpoints also require authentication. Backend permissions enforce these rules even if someone edits the frontend.
 - There is no public registration page. Django Admin remains protected by Django's built-in staff and permission checks.
 

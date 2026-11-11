@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Attendance, Department, Student
+from .access import can_view_private_details, visible_students
+from .models import Attendance, ClassSection, Department, Student
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -35,21 +36,23 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     department_name = serializers.CharField(source='department.name', read_only=True, default=None)
+    class_name = serializers.CharField(source='class_section.name', read_only=True, default=None)
 
     class Meta:
         model = Student
-        fields = ['id', 'student_id', 'first_name', 'last_name', 'name', 'email', 'phone', 'course', 'date_of_birth', 'enrollment_date', 'status', 'gender', 'address', 'department', 'department_name', 'created_at', 'updated_at']
+        # `user` (the linked login) is deliberately not exposed; staff link accounts in Django Admin.
+        fields = ['id', 'student_id', 'first_name', 'last_name', 'name', 'email', 'phone', 'course', 'date_of_birth', 'enrollment_date', 'status', 'gender', 'address', 'department', 'department_name', 'class_section', 'class_name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'name', 'created_at', 'updated_at']
 
     def get_name(self, obj):
         return f'{obj.first_name} {obj.last_name}'
 
-    def get_fields(self):
-        fields = super().get_fields()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
         request = self.context.get('request')
-        if request and not request.user.is_staff:
-            fields.pop('address', None)
-        return fields
+        if not request or not can_view_private_details(request.user, instance):
+            data.pop('address', None)
+        return data
 
     def validate_student_id(self, value):
         value = value.strip()
@@ -103,5 +106,38 @@ class AttendanceSerializer(serializers.ModelSerializer):
         fields = ['id', 'student', 'student_name', 'student_full_name', 'student_id', 'date', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get('request')
+        if request:
+            # Teachers may only pick students in their own classes; others look like they don't exist.
+            fields['student'].queryset = visible_students(request.user)
+        return fields
+
     def get_student_full_name(self, obj):
         return f'{obj.student.first_name} {obj.student.last_name}'
+
+
+class ClassSectionSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True, default=None)
+    student_count = serializers.IntegerField(source='students.count', read_only=True)
+    teacher_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClassSection
+        fields = ['id', 'name', 'department', 'department_name', 'student_count', 'teacher_names', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_teacher_names(self, obj):
+        return [str(teacher) for teacher in obj.teachers.select_related('user')]
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Class name is required.')
+        matches = ClassSection.objects.filter(name__iexact=value)
+        if self.instance:
+            matches = matches.exclude(pk=self.instance.pk)
+        if matches.exists():
+            raise serializers.ValidationError('A class with this name already exists.')
+        return value
