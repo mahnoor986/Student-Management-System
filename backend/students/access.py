@@ -10,7 +10,10 @@ STAFF = 'staff'
 TEACHER = 'teacher'
 PARENT = 'parent'
 STUDENT = 'student'
-VIEWER = 'viewer'  # signed-in, not staff, not linked to any record: read-only access to everything
+VIEWER = 'viewer'  # member of the "Viewers" group: read-only access to every record (no addresses)
+NO_ROLE = 'none'   # signed in but linked to nothing: deny by default, sees no records
+
+VIEWERS_GROUP = 'Viewers'
 
 
 def get_role(user):
@@ -24,7 +27,9 @@ def get_role(user):
         return PARENT
     if Student.objects.filter(user=user).exists():
         return STUDENT
-    return VIEWER
+    if user.groups.filter(name=VIEWERS_GROUP).exists():
+        return VIEWER
+    return NO_ROLE
 
 
 def visible_students(user):

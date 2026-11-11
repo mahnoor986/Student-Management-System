@@ -2,6 +2,7 @@
 from io import StringIO
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from rest_framework import status
@@ -42,6 +43,8 @@ class RoleAccessTests(APITestCase):
 
         cls.staff = User.objects.create_user('staff', password='Pw-test-12345!', is_staff=True)
         cls.viewer = User.objects.create_user('viewer', password='Pw-test-12345!')
+        cls.viewer.groups.add(Group.objects.get(name='Viewers'))  # read-only access is opt-in (audit H2)
+        cls.unlinked = User.objects.create_user('unlinked', password='Pw-test-12345!')
 
         cls.att_a = Attendance.objects.create(student=cls.student_a, date='2026-01-05', status='Present')
         cls.att_b = Attendance.objects.create(student=cls.student_b, date='2026-01-05', status='Absent')
@@ -59,6 +62,13 @@ class RoleAccessTests(APITestCase):
         self.assertEqual(get_role(self.parent_a), 'parent')
         self.assertEqual(get_role(self.user_student_a), 'student')
         self.assertEqual(get_role(self.viewer), 'viewer')
+        self.assertEqual(get_role(self.unlinked), 'none')
+
+    def test_login_without_a_role_sees_nothing(self):
+        self.as_user(self.unlinked)
+        self.assertEqual(self.client.get('/api/students/').data, [])
+        self.assertEqual(self.client.get(f'/api/students/{self.student_a.pk}/').status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get('/api/auth/me/').data['user']['role'], 'none')
 
     def test_me_endpoint_reports_role(self):
         self.as_user(self.teacher_a)

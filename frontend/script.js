@@ -26,7 +26,7 @@
   let isStaff = false;
   let canRecordAttendance = false;
   let seesEveryone = false;
-  const ROLE_LABELS = { staff: 'Staff', teacher: 'Teacher', parent: 'Parent', student: 'Student', viewer: 'Read only' };
+  const ROLE_LABELS = { staff: 'Staff', teacher: 'Teacher', parent: 'Parent', student: 'Student', viewer: 'Viewer (read only)', none: 'No access yet' };
 
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -383,7 +383,7 @@
       // UI hints only: the API enforces every one of these rules on the server.
       canRecordAttendance = ['staff', 'teacher'].includes(currentUser.role);
       seesEveryone = ['staff', 'viewer'].includes(currentUser.role);
-      $('#auth-user').textContent = `${currentUser.display_name || currentUser.username} · ${ROLE_LABELS[currentUser.role] || 'Read only'}`;
+      $('#auth-user').textContent = `${currentUser.display_name || currentUser.username} · ${ROLE_LABELS[currentUser.role] || 'No access yet'}`;
       $$('[data-role="staff"]').forEach(control => control.classList.toggle('hidden', !isStaff));
       $$('[data-role="attendance"]').forEach(control => control.classList.toggle('hidden', !canRecordAttendance));
       $('#auth-gate').classList.add('hidden');

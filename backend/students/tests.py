@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import Client
 from django.core.management import call_command
 from io import StringIO
@@ -154,6 +155,7 @@ class AuthorizationTests(APITestCase):
 
     def test_regular_user_can_read_but_cannot_mutate_records(self):
         user = User.objects.create_user(username='reader-test', password='Valid-test-password-983!')
+        user.groups.add(Group.objects.get(name='Viewers'))  # read-only access is opt-in (audit H2)
         self.client.force_authenticate(user=user)
         self.assertEqual(self.client.get('/api/students/').status_code, status.HTTP_200_OK)
         self.assertEqual(self.client.get('/api/students/summary/').status_code, status.HTTP_200_OK)
@@ -220,6 +222,7 @@ class PhaseFourAPITests(APITestCase):
     def setUp(self):
         self.staff = User.objects.create_user(username='phase4-staff', password='Strong-test-password-983!', is_staff=True)
         self.reader = User.objects.create_user(username='phase4-reader', password='Strong-test-password-983!')
+        self.reader.groups.add(Group.objects.get(name='Viewers'))  # read-only access is opt-in (audit H2)
         self.client.force_authenticate(user=self.staff)
         self.department = Department.objects.create(name='Science', code='SCI')
         self.student = Student.objects.create(student_id='P4-1001', first_name='Ayesha', last_name='Khan', email='p4@example.com', course='Biology', department=self.department, address='12 Example Road')
