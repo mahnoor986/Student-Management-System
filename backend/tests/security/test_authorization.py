@@ -80,6 +80,16 @@ class VerticalEscalationTests(SecurityTestCase):
         manager.refresh_from_db()
         self.assertFalse(manager.is_superuser, 'staff with auth.change_user promoted itself to superuser')
 
+    def test_superuser_can_still_grant_privileges(self):
+        target = User.objects.create_user('promote_me', password='Promote-pass-55123!')
+        self.login_as(self.u_superuser)
+        form = {'username': 'promote_me', 'is_active': 'on', 'is_staff': 'on',
+                'date_joined_0': '2026-01-01', 'date_joined_1': '00:00:00', 'last_login_0': '', 'last_login_1': ''}
+        response = self.client.post(f'/admin/auth/user/{target.pk}/change/', form)
+        self.assertEqual(response.status_code, 302)
+        target.refresh_from_db()
+        self.assertTrue(target.is_staff)
+
 
 class MassAssignmentTests(SecurityTestCase):
     def test_student_create_ignores_user_id_and_read_only_fields(self):

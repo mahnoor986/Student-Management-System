@@ -1,5 +1,26 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin
 from .models import Attendance, ClassSection, Department, ParentProfile, Student, TeacherProfile
+
+PRIVILEGE_FIELDS = ('is_superuser', 'is_staff', 'groups', 'user_permissions')
+
+admin.site.unregister(get_user_model())
+
+
+@admin.register(get_user_model())
+class RestrictedUserAdmin(UserAdmin):
+    """Only superusers may grant or change privileges (audit finding L8).
+
+    Staff with auth.change_user can still edit names, emails, passwords and active status,
+    but cannot make anyone (including themselves) staff or superuser, or change groups/permissions.
+    """
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = super().get_readonly_fields(request, obj)
+        if request.user.is_superuser:
+            return readonly
+        return tuple(readonly) + PRIVILEGE_FIELDS
 
 
 @admin.register(Student)
