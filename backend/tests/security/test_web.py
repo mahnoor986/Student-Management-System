@@ -9,6 +9,7 @@ from students.models import Student
 from .base import PASSWORD, SecurityTestCase
 
 REPO_ROOT = Path(settings.BASE_DIR).parent
+FRONTEND = REPO_ROOT / 'frontend' if (REPO_ROOT / 'frontend').is_dir() else REPO_ROOT
 XSS = '<script>alert(1)</script>'
 
 # --- tiny template-literal scanner for the XSS static check --------------------------------------
@@ -132,7 +133,7 @@ class XSSTests(SecurityTestCase):
 
     def test_frontend_escapes_every_api_value_written_with_innerHTML(self):
         """Static check of script.js: every ${...} that ends up in innerHTML must be escaped or numeric."""
-        source = (REPO_ROOT / 'script.js').read_text(encoding='utf-8')
+        source = (FRONTEND / 'script.js').read_text(encoding='utf-8')
         lines = [line for line in source.splitlines() if 'innerHTML' in line]
         self.assertGreater(len(lines), 5)
         self.assertEqual([expr for line in lines for expr in unsafe_interpolations(line)], [])
@@ -145,13 +146,13 @@ class XSSTests(SecurityTestCase):
     def test_no_tokens_in_browser_storage(self):
         for name in ('script.js', 'login.js'):
             with self.subTest(file=name):
-                source = (REPO_ROOT / name).read_text(encoding='utf-8')
+                source = (FRONTEND / name).read_text(encoding='utf-8')
                 self.assertNotRegex(source, r'localStorage|sessionStorage|document\.cookie')
 
     def test_L6_frontend_pages_set_a_content_security_policy(self):
         for page in ('index.html', 'login.html'):
             with self.subTest(page=page):
-                path = REPO_ROOT / 'frontend' / page if (REPO_ROOT / 'frontend').is_dir() else REPO_ROOT / page
+                path = FRONTEND / page
                 self.assertRegex(path.read_text(encoding='utf-8'), r'(?i)http-equiv=["\']Content-Security-Policy')
 
 

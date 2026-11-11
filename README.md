@@ -4,8 +4,9 @@ CampusFlow is a local student-management app with a responsive HTML/CSS/vanilla-
 
 ## Files
 
-- `index.html`, `style.css`, `script.js` — existing dashboard and student-management interface, now protected by a Django session.
-- `login.html`, `login.js` — sign-in page and CSRF-protected login request.
+- `frontend/index.html`, `frontend/style.css`, `frontend/script.js` — dashboard and student-management interface, protected by a Django session.
+- `frontend/login.html`, `frontend/login.js` — sign-in page and CSRF-protected login request.
+- Only the `frontend/` folder is served to the browser. Never serve the project root: it contains `backend/.env` (database password), the Git history and local databases.
 - `backend/config/` — Django settings and top-level routes.
 - `backend/students/` — student model/API, auth endpoints, permissions, admin setup, and tests.
 - `backend/db.sqlite3` — local development database (ignored by Git; do not delete to reset anything).
@@ -69,11 +70,11 @@ python manage.py runserver --insecure
 
 `runserver --insecure` is only for local development static files when `DEBUG=False`; it lets Django serve its built-in admin assets without turning debug mode on. `STATIC_URL` is `/static/` and `STATIC_ROOT` is `backend/staticfiles`. For deployment, use `collectstatic` and a dedicated static-file server instead. `runserver` is for development only. Django hides password characters during `createsuperuser`; type the password and press Enter, then confirm it at the next prompt.
 
-Open a second PowerShell window at the project root and serve the frontend:
+Open a second PowerShell window at the project root and serve **only the `frontend` folder**:
 
 ```powershell
-cd C:\Users\mahnoor\Desktop\SMS
-py -m http.server 5500 --bind 127.0.0.1
+cd <path-to>\Student-Management-System
+py -m http.server 5500 --bind 127.0.0.1 --directory frontend
 ```
 
 Open <http://127.0.0.1:5500/>. The dashboard redirects signed-out visitors to the sign-in page. Use the username/password created with `createsuperuser`. The API hostname follows the frontend hostname, so `localhost:5500` pairs with `localhost:8000`, while `127.0.0.1:5500` pairs with `127.0.0.1:8000`.
@@ -123,7 +124,7 @@ Use a stable `DJANGO_SECRET_KEY`, HTTPS, secure cookie settings, appropriate hos
 Apply new migrations after updating:
 
 ```powershell
-cd C:\Users\mahnoor\Desktop\SMS\backend
+cd <path-to>\Student-Management-System\backend
 .\.venv\Scripts\python.exe manage.py migrate
 .\.venv\Scripts\python.exe manage.py test
 ```
