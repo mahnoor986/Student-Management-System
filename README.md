@@ -24,6 +24,8 @@ Each login has exactly one role. All rules live in `backend/students/access.py` 
 | **Viewer** | Add the login to the *Viewers* group | All students, without addresses | Nothing |
 | *(no role)* | A login linked to none of the above | Nothing (deny by default) | Nothing |
 
+**Student status:** a student whose record is set to *Inactive* cannot sign in (and is signed out on their next request); set them back to *Active* to restore the login. *Graduated* students can still sign in and see their own record. Teachers and parents see students of every status.
+
 Addresses are shown only to staff, the student themself and their parents. Classes (`/api/classes/`) group students; teachers are assigned to classes. Create the first administrator with `createsuperuser`; staff add other logins in Django Admin. `python manage.py seed_demo_accounts` creates fictional demo classes and two logins of each role (prints the password once).
 
 - **Anonymous visitors** are sent to `login.html`; all student and dashboard API endpoints also require authentication. Backend permissions enforce these rules even if someone edits the frontend.

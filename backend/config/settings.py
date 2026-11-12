@@ -47,6 +47,9 @@ else:
     DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
 # Argon2id first (audit finding L3). PBKDF2 stays listed so existing hashes keep working;
 # Django re-hashes them with Argon2 the next time each user signs in.
+# Inactive students cannot sign in; Graduated students can (see students/backends.py).
+AUTHENTICATION_BACKENDS = ['students.backends.StudentStatusBackend']
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
